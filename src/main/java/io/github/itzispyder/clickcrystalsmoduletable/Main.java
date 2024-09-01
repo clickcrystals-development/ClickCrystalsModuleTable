@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Main {
 
@@ -64,28 +66,22 @@ public class Main {
         String contents = new String(fis.readAllBytes());
         fis.close();
 
-        String constructor = null;
+        Pattern regex = Pattern.compile("\s*super\\(\\\"(.*)\\\"\\s*,\\s*Categories\\.[A-Z]+\\s*,\\s*\\\"(.*)\\\"\\);\s*");
+        Matcher match;
 
         for (String line : contents.lines().toList()) {
-            if (!line.matches(".*super\\(.*\\);.*"))
-                continue;
-            constructor = line.trim().replaceAll("super\\(|\\);", "");
-            break;
+            if ((match = regex.matcher(line)).matches()) {
+                String name = snake2pascalCase(match.group(1));
+                String desc = match.group(2).replaceAll("\\\\\"", "\"");
+                return new ModuleInfo(name, desc);
+            }
         }
-
-        if (constructor == null)
-            return null;
-
-        String[] split = constructor.split("\s*,\s*Categories.[A-Z]+\s*,\s*");
-        String name = snake2pascalCase(split[0].replaceAll("(^\")|(\"$)", ""));
-        String desc = split[1].replaceAll("(^\")|(\"$)", "").replaceAll("\\\\\"", "\"");
-
-        return new ModuleInfo(name, desc);
+        return null;
     }
 
     public static String snake2pascalCase(String s) {
         StringBuilder builder = new StringBuilder();
-        for (String section : s.trim().split("[_-]"))
+        for (String section : s.trim().split("[ _-]"))
             builder.append(capitalize(section));
         return builder.toString();
     }
