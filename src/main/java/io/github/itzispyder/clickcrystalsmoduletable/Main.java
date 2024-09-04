@@ -4,8 +4,6 @@ import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,11 +21,9 @@ public class Main {
     public static void main(String[] args) {
         StringBuilder result = new StringBuilder();
 
-        result.append("| **Module** | **Description** |").append('\n');
-        result.append("|:----------:|:---------------:|").append('\n');
-
-        for (ModuleInfo info : readFiles())
-            result.append("| ").append(info.name).append(" | ").append(info.desc).append(" |\n");
+        result.append("| **Module** | **Description** |\n");
+        result.append("|:----------:|:---------------:|\n");
+        readFiles(result);
 
         System.out.println(result);
         StringSelection data = new StringSelection(result.toString());
@@ -35,10 +31,9 @@ public class Main {
         System.out.println("The table above has been successfully copied to system clipboard!");
     }
 
-    public static List<ModuleInfo> readFiles() {
+    public static void readFiles(StringBuilder builder) {
         try {
             String path = "src/main/java/io/github/itzispyder/clickcrystals/modules/modules/";
-            List<ModuleInfo> list = new ArrayList<>();
 
             for (String cat : categories) {
                 String subPath = path + cat;
@@ -48,20 +43,18 @@ public class Main {
                 if (subFiles == null)
                     continue;
 
-                ModuleInfo info;
+                String info;
                 for (File javaFile : subFiles)
-                    if ((info = readFile(javaFile)) != null)
-                        list.add(info);
+                    if ((info = readFileToRow(javaFile)) != null)
+                        builder.append(info);
             }
-            return list;
         }
         catch (Exception ex) {
             ex.printStackTrace();
-            return new ArrayList<>();
         }
     }
 
-    public static ModuleInfo readFile(File file) throws Exception {
+    public static String readFileToRow(File file) throws Exception {
         FileInputStream fis = new FileInputStream(file);
         String contents = new String(fis.readAllBytes());
         fis.close();
@@ -73,7 +66,7 @@ public class Main {
             if ((match = regex.matcher(line)).matches()) {
                 String name = snake2pascalCase(match.group(1));
                 String desc = match.group(2).replaceAll("\\\\\"", "\"");
-                return new ModuleInfo(name, desc);
+                return "| %s | %s |%n".formatted(name, desc);
             }
         }
         return null;
@@ -91,9 +84,5 @@ public class Main {
         if (len == 1)
             return s.toUpperCase();
         return s.substring(0, 1).toUpperCase() + s.substring(1);
-    }
-
-    public record ModuleInfo(String name, String desc) {
-
     }
 }
